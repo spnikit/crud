@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script type="text/javascript">
+
+        var webServiceURL = 'http://localhost:8080/services';
+
+
+        function readSoapCall() {
+
+            $.ajax({
+                type: "POST",
+                url: webServiceURL,
+                contentType: "text/xml",
+                dataType: "xml",
+                data: '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"' +
+                ' xmlns:mod="http://model.main/">' +
+                '<soapenv:Header/>' +
+                '<soapenv:Body>' +
+                '<mod:getAllPersons/>' +
+                '</soapenv:Body>' +
+                '</soapenv:Envelope>',
+                success: function processSuccess(data, status, req) {
+                    readAndShowElements(data);
+
+                },
+                error: function processError(data, status, req) {
+                    console.log("Can't read table");
+                }
+            });
+        }
+
+        function deleteSoapCall(obj) {
+
+            var index = obj.parentNode.parentNode.rowIndex;
+            var table = document.getElementById("myTableData");
+            var idColumnValue = table.getElementsByTagName("td")[0].innerText;
+            table.deleteRow(index);
+
+
+            $.ajax({
+                type: "POST",
+                url: webServiceURL,
+                contentType: "text/xml",
+                dataType: "xml",
+                data: '<soapenv:Envelope xmlns:soapenv=' +
+                '"http://schemas.xmlsoap.org/soap/envelope/" xmlns:mod="http://model.main/">' +
+                '<soapenv:Header/>' +
+                '<soapenv:Body>' +
+                '<mod:deletePerson>' +
+                '<arg0>' + idColumnValue + '</arg0>' +
+                '</mod:deletePerson>' +
+                '</soapenv:Body>' +
+                '</soapenv:Envelope>',
+                success: function processSuccess(data, status, req) {
+                    console.log("Element deleted");
+                },
+                error: function processError(data, status, req) {
+                    console.log("Can't delete element");
+                }
+            });
+        }
+
+        function createSoapCall() {
+
+
+            $.ajax({
+                type: "POST",
+                url: webServiceURL,
+                contentType: "text/xml",
+                dataType: "xml",
+                data: '<soapenv:Envelope xmlns:soapenv=' +
+                '"http://schemas.xmlsoap.org/soap/envelope/"' +
+                ' xmlns:mod="http://model.main/">' +
+                '<soapenv:Header/>' +
+                '<soapenv:Body>' +
+                '<mod:add>' +
+                '<arg0>' + $("#personsID").val() + '</arg0>' +
+                '<arg1>' + $("#personsName").val() + '</arg1>' +
+                '<arg2>' + $("#personsSubject").val() + '</arg2>' +
+                '</mod:add>' +
+                '</soapenv:Body>' +
+                '</soapenv:Envelope>',
+                success: function processSuccess(data, status, req) {
+
+                    console.log("Element created");
+
+
+                    var table = document.getElementById("myTableData");
+                    var row = table.insertRow();
+
+                    row.insertCell(0).innerHTML = $("#personsID").val();
+                    row.insertCell(1).innerHTML = $("#personsName").val();
+                    row.insertCell(2).innerHTML = $("#personsSubject").val();
+                    row.insertCell(3).innerHTML = '<input type="button" value="Delete"' +
+                        'onclick="deleteSoapCall(this)"/>'
+
+                },
+                error: function processError() {
+                    alert(req.responseText + " " + status);
+                }
+            });
+        }
+
+        function updateSoapCall()   {
+
+            $.ajax({
+                type: "POST",
+                url: webServiceURL,
+                contentType: "text/xml",
+                dataType: "xml",
+                data: '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"' +
+                ' xmlns:mod="http://model.main/"> <soapenv:Header/>' +
+                ' <soapenv:Body> <mod:updatePerson>' +
+                ' <arg0>' + $("#personsIDForUpdate").val() + '</arg0>' +
+                ' <arg1>' + $("#personsNameForUpdate").val() + '</arg1>' +
+                ' <arg2>' + $("#personsSubjectForUpdate").val() + '</arg2>' +
+                ' </mod:updatePerson> </soapenv:Body> </soapenv:Envelope>',
+                success: function processSuccess(data, status, req) {
+                    console.log("Element updated!");
+                    readSoapCall();
+                },
+                error: function processError() {
+                    console.log("Can't update element");
+
+                }
+
+            })
+
+        }
+
+        function readAndShowElements(xml) {
+            var i;
+            var table = document.getElementById("myTableData");
+            var rowCount = table.rows.length;
+            var x = xml.getElementsByTagName("id");
+
+
+            for (i = 0; i < x.length; i++) {
+
+                var row = table.insertRow();
+                row.id = i;
+
+                var id1 = xml.getElementsByTagName("id")[i].childNodes[0].nodeValue;
+                var name = xml.getElementsByTagName("name")[i].childNodes[0].nodeValue;
+                var subject = xml.getElementsByTagName("subject")[i].childNodes[0].nodeValue;
+
+                row.insertCell(0).innerHTML = id1;
+                row.insertCell(1).innerHTML = name;
+                row.insertCell(2).innerHTML = subject;
+                row.insertCell(3).innerHTML = '<input type="button" value="Delete"' +
+                    'onclick="deleteSoapCall(this)"/>'
+
+
+            }
+
+
+        }
+
+
+    </script>
+</head>
+<style>
+    table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 5px;
+    }
+
+    form {
+        border: 1px solid black;
+        border-collapse: collapse;
+        padding: 5px;
+    }
+</style>
+<body>
+
+<table id="myTableData" border="1" cellpadding="2">
+    <tr>
+        <th><b>ID</b></th>
+        <th><b>NAME</b></th>
+        <th><b>SUBJECT</b></th>
+    </tr>
+</table>
+
+
+<input type="button" value="GET TABLE" onclick="readSoapCall();"/><br><br>
+
+
+<label>Create Person</label><br><br>
+
+<form id="create">
+    <label>ID</label><br>
+    <input type="text" name="ID" id="personsID"/><br>
+
+    <label>Name</label><br>
+    <input type="text" name="Name" id="personsName"/><br>
+
+    <label>Subject</label><br>
+    <input type="text" name="Subject" id="personsSubject"/><br><br>
+    <input type="button" value="CREATE" onclick="createSoapCall();"/>
+</form>
+<br><br><br>
+
+
+<label>Update entry</label><br><br>
+
+<form id="update">
+
+    <label>Update elem with id №</label>
+    <input type="text" name="id" id="personsIDForUpdate"><br><br>
+    <labe>Set elem with following values</labe>
+    <br>
+    <label>Name</label><br>
+    <input type="text" name="Name" id="personsNameForUpdate"/><br>
+    <label>Subject</label><br>
+    <input type="text" name="Subject" id="personsSubjectForUpdate"/><br><br>
+
+    <input type="button" value="UPDATE" onclick="updateSoapCall()"/>
+
+
+</form>
+
+
+</body>
+</html>
